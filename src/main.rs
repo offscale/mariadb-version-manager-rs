@@ -1,6 +1,6 @@
 // #[macro_use]
+extern crate clap_markdown;
 extern crate version_manager_rs;
-use clap::Subcommand;
 
 version_manager_rs::cli_struct!(
     env!("CARGO_PKG_NAME"),
@@ -10,5 +10,8 @@ version_manager_rs::cli_struct!(
 );
 
 fn main() {
-    let _ = Cli::parse();
+    let args = Cli::parse();
+    if args.markdown_help {
+        clap_markdown::print_help_markdown::<Cli>();
+    }
 }
