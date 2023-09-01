@@ -4,9 +4,11 @@ mariadb-version-manager-rs
 
 [MariaDB](https://mariadb.org) version manager. Installs any supported version on any OS.
 
-<hr/>
+# Command-Line Help for `mariadb-version-manager-rs`
 
-## Command Overview
+This document contains the help content for the `mariadb-version-manager-rs` command-line program.
+
+**Command Overview:**
 
 * [`mariadb-version-manager-rs`↴](#mariadb-version-manager-rs)
 * [`mariadb-version-manager-rs download`↴](#mariadb-version-manager-rs-download)
@@ -38,7 +40,7 @@ mariadb-version-manager-rs
 * `start` — Start specified version
 * `stop` — Stop specified version
 * `uri` — Print out database connection string
-* `install-service` —
+* `install-service` — Install service (daemon), e.g., systemd, OpenRC, windows-service
 
 ###### **Options:**
 
@@ -52,6 +54,24 @@ mariadb-version-manager-rs
 
   Default value: `localhost`
 * `-p`, `--port <PORT>`
+* `--database <DATABASE>`
+
+  Default value: `database`
+* `--runtime-path <RUNTIME_PATH>`
+
+  Default value: `$HOME/version-managers/mariadb-version-manager-rslatest/run`
+* `--data-path <DATA_PATH>`
+
+  Default value: `$HOME/version-managers/mariadb-version-manager-rslatest/data`
+* `--bin-path <BIN_PATH>`
+
+  Default value: `$HOME/version-managers/mariadb-version-manager-rslatest/bin`
+* `--logs-path <LOGS_PATH>`
+
+  Default value: `$HOME/version-managers/mariadb-version-manager-rslatest/logs`
+* `--locale <LOCALE>`
+
+  Default value: `en_US.UTF-8`
 * `--markdown-help`
 
 
@@ -150,6 +170,8 @@ Print out database connection string
 
 ## `mariadb-version-manager-rs install-service`
 
+Install service (daemon), e.g., systemd, OpenRC, windows-service
+
 **Usage:** `mariadb-version-manager-rs install-service
 install-service <COMMAND>`
 
@@ -201,6 +223,7 @@ Install systemd service
 * `--user <USER>`
 
   Default value: `mariadb-version-manager-rs`
+
 
 
 ## `mariadb-version-manager-rs install-service windows-service`
