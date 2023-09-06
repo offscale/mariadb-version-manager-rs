@@ -59,16 +59,16 @@ This document contains the help content for the `mariadb-version-manager-rs` com
   Default value: `database`
 * `--runtime-path <RUNTIME_PATH>`
 
-  Default value: `$HOME/version-managers/mariadb-version-manager-rslatest/run`
+  Default value: `$HOME/version-managers/mariadb-version-manager-rs/mariadb-version-manager-rs/latest/run`
 * `--data-path <DATA_PATH>`
 
-  Default value: `$HOME/version-managers/mariadb-version-manager-rslatest/data`
+  Default value: `$HOME/version-managers/mariadb-version-manager-rs/mariadb-version-manager-rs/latest/data`
 * `--bin-path <BIN_PATH>`
 
-  Default value: `$HOME/version-managers/mariadb-version-manager-rslatest/bin`
+  Default value: `$HOME/version-managers/mariadb-version-manager-rs/mariadb-version-manager-rs/latest/bin`
 * `--logs-path <LOGS_PATH>`
 
-  Default value: `$HOME/version-managers/mariadb-version-manager-rslatest/logs`
+  Default value: `$HOME/version-managers/mariadb-version-manager-rs/mariadb-version-manager-rs/latest/logs`
 * `--locale <LOCALE>`
 
   Default value: `en_US.UTF-8`
