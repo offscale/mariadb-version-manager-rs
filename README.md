@@ -27,6 +27,8 @@ This document contains the help content for the `mariadb-version-manager-rs` com
 
 ## `mariadb-version-manager-rs`
 
+
+
 **Usage:** `mariadb-version-manager-rs [OPTIONS] --port <PORT> <COMMAND>`
 
 ###### **Subcommands:**
@@ -41,38 +43,48 @@ This document contains the help content for the `mariadb-version-manager-rs` com
 * `stop` — Stop specified version
 * `uri` — Print out database connection string
 * `install-service` — Install service (daemon), e.g., systemd, OpenRC, windows-service
+* `unknown` —
 
 ###### **Options:**
 
-* `--app-version <APP_VERSION>`
+* `--vms-config <VMS_CONFIG>` — Config file to read from. If provided used as new default (before env and argv res)
+
+  Default value: `$HOME/version-managers/mariadb-version-manager-rs/vms-config.json`
+* `--config-read` — Whether to read from config file. If vms_config provided, this defaults to `true`
+
+  Default value: `false`
+* `--config-write` — Whether to write to config file
+
+  Default value: `true`
+* `--app-version <APP_VERSION>` — Desired version of application
 
   Default value: `latest`
-* `--root <ROOT>`
+* `--root <ROOT>` — Root directory. By default all paths are relative to this one
 
   Default value: `$HOME/version-managers/mariadb-version-manager-rs`
-* `--hostname <HOSTNAME>`
+* `--hostname <HOSTNAME>` — Hostname of server
 
   Default value: `localhost`
-* `-p`, `--port <PORT>`
-* `--database <DATABASE>`
+* `-p`, `--port <PORT>` — Port for server to listen on
+* `--database <DATABASE>` — Database name
 
   Default value: `database`
-* `--runtime-path <RUNTIME_PATH>`
+* `--runtime-path <RUNTIME_PATH>` — Runtime path
 
-  Default value: `$HOME/version-managers/mariadb-version-manager-rs/mariadb-version-manager-rs/latest/run`
-* `--data-path <DATA_PATH>`
+  Default value: `$HOME/version-managers/mariadb-version-manager-rs/mariadb-version-manager-rs/$APP_VERSION/run`
+* `--data-path <DATA_PATH>` — Data path. This is where the actual data is stored, e.g., the .db and WAL files
 
-  Default value: `$HOME/version-managers/mariadb-version-manager-rs/mariadb-version-manager-rs/latest/data`
-* `--bin-path <BIN_PATH>`
+  Default value: `$HOME/version-managers/mariadb-version-manager-rs/mariadb-version-manager-rs/$APP_VERSION/data`
+* `--bin-path <BIN_PATH>` — Binary path. Where the executable binary are located. Sometimes called PREFIX
 
-  Default value: `$HOME/version-managers/mariadb-version-manager-rs/mariadb-version-manager-rs/latest/bin`
-* `--logs-path <LOGS_PATH>`
+  Default value: `$HOME/version-managers/mariadb-version-manager-rs/mariadb-version-manager-rs/$APP_VERSION/bin`
+* `--logs-path <LOGS_PATH>` — Logs path. Where the log files are to be stored
 
-  Default value: `$HOME/version-managers/mariadb-version-manager-rs/mariadb-version-manager-rs/latest/logs`
-* `--locale <LOCALE>`
+  Default value: `$HOME/version-managers/mariadb-version-manager-rs/mariadb-version-manager-rs/$APP_VERSION/logs`
+* `--locale <LOCALE>` — Locale to use
 
   Default value: `en_US.UTF-8`
-* `--markdown-help`
+* `--markdown-help` — Markdown help generator. Only really used to generate replacement README.md files
 
 
 
@@ -241,7 +253,15 @@ Install Windows Service
 
   Default value: ``
 
----
+
+
+## `mariadb-version-manager-rs unknown`
+
+**Usage:** `mariadb-version-manager-rs unknown`
+
+
+
+<hr/>
 
 ## License
 
