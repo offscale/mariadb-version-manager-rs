@@ -1,6 +1,8 @@
 extern crate clap_markdown;
 extern crate version_manager_rs;
 
+use mariadb_version_manager_rs::mariadb_vm::download;
+
 version_manager_rs::cli_struct_and_helpers!(
     env!("CARGO_PKG_NAME"),
     env!("CARGO_PKG_AUTHORS"),
@@ -8,20 +10,35 @@ version_manager_rs::cli_struct_and_helpers!(
     env!("CARGO_PKG_DESCRIPTION")
 );
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = {
         let mut _args = Cli::parse();
-        config_from_file(&mut _args)?.unwrap_or_else(|| _args)
+        maybe_config_from_file(&mut _args)?.unwrap_or_else(|| _args)
     };
     if args.markdown_help {
         clap_markdown::print_help_markdown::<Cli>();
         return Ok(());
     }
     match &args.command {
-        Commands::Ls {} => {
-            default_ls_command(&args)?;
+        Commands::Download { version } => {
+            match download(
+                version.as_ref().unwrap_or(&args.app_version),
+                ROOT_DEFAULT.into(),
+                false,
+            )
+            .await?
+            {
+                Some(filepath) => println!("Downloaded: {:?}", filepath),
+                None => {}
+            }
         }
-        _ => panic!("No command given"),
+        Commands::Ls {} => default_ls_command(&args)?,
+        _ => {
+            if !args.markdown_help {
+                let _ = Cli::command().print_help();
+            }
+        }
     }
     if should_write_to_config(&args) {
         config_file_write(&args)?;
