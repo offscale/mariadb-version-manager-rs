@@ -24,7 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Commands::Download { version } => {
             match download(
                 version.as_ref().unwrap_or(&args.app_version),
-                ROOT_DEFAULT.into(),
+                &args.vm_root,
                 false,
             )
             .await?

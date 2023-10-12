@@ -3,21 +3,17 @@ use crate::errors::MariaDbVmError;
 
 pub async fn download(
     version: &str,
-    target_dir: std::ffi::OsString,
+    target_dir: &std::ffi::OsString,
     force: bool,
 ) -> Result<Option<std::ffi::OsString>, MariaDbVmError> {
-    let filename = format!("mariadb-{}-winx64.zip", version);
-    let target_dir = std::path::Path::new(target_dir.as_os_str())
-        .join("downloads")
-        .join("mariadb");
-    let target_file = target_dir.join(filename);
     // TODO: mirrors, checksum
-    let url: reqwest::Url = {
+    let (url, filename) = {
         let _parts = if cfg!(windows) {
             (
                 "https://archive.mariadb.org//mariadb-",
                 version,
-                "/winx64-packages/mariadb-",
+                "/winx64-packages/",
+                "mariadb-",
                 version,
                 "-winx64.zip",
             )
@@ -25,7 +21,8 @@ pub async fn download(
             (
                 "https://archive.mariadb.org/mariadb-",
                 version,
-                "/bintar-linux-systemd-x86_64/mariadb-",
+                "/bintar-linux-systemd-x86_64/",
+                "mariadb-",
                 version,
                 "-preview-linux-systemd-x86_64.tar.gz",
             )
@@ -33,16 +30,24 @@ pub async fn download(
             (
                 "https://archive.mariadb.org/mariadb-",
                 version,
-                "/bintar-freebsd130-x86_64/mariadb-",
+                "/bintar-freebsd130-x86_64/",
+                "mariadb-",
                 version,
                 "-freebsd13.0-x86_64.tar.gz",
             )
         };
-        reqwest::Url::parse(&format!(
-            "{}{}{}{}{}",
-            _parts.0, _parts.1, _parts.2, _parts.3, _parts.4
-        ))?
+        (
+            reqwest::Url::parse(&format!(
+                "{}{}{}{}{}{}",
+                _parts.0, _parts.1, _parts.2, _parts.3, _parts.4, _parts.5
+            ))?,
+            format!("{}{}{}", _parts.3, _parts.4, _parts.5),
+        )
     };
+    let target_dir = std::path::Path::new(target_dir.as_os_str())
+        .join("downloads")
+        .join("mariadb");
+    let target_file = target_dir.join(filename);
     if !force && target_file.is_file() {
         return Ok(Some(target_file.into_os_string()));
     } else if !target_dir.is_dir() {
