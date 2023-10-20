@@ -14,7 +14,7 @@ version_manager_rs::cli_struct_and_helpers!(
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = {
         let mut _args = Cli::parse();
-        maybe_config_from_file(&mut _args)?.unwrap_or_else(|| _args)
+        ConfigFuncs::maybe_config_from_file(&mut _args)?.unwrap_or_else(|| _args)
     };
     if args.markdown_help {
         clap_markdown::print_help_markdown::<Cli>();
@@ -33,15 +33,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 None => {}
             }
         }
-        Commands::Ls {} => default_ls_command(&args)?,
+        Commands::Ls {} => CommandFuncs::default_ls_command(&args)?,
         _ => {
             if !args.markdown_help {
                 let _ = Cli::command().print_help();
             }
         }
     }
-    if should_write_to_config(&args) {
-        config_file_write(&args)?;
+    if ConfigFuncs::should_write_to_config(&args) {
+        ConfigFuncs::config_file_write(&args)?;
     }
     Ok(())
 }

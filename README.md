@@ -43,7 +43,6 @@ This document contains the help content for the `mariadb-version-manager-rs` com
 * `stop` — Stop specified version
 * `uri` — Print out database connection string
 * `install-service` — Install service (daemon), e.g., systemd, OpenRC, windows-service
-* `unknown` —
 
 ###### **Options:**
 
@@ -59,6 +58,9 @@ This document contains the help content for the `mariadb-version-manager-rs` com
 * `--app-version <APP_VERSION>` — Desired version of application
 
   Default value: `latest`
+* `--vm-root <VM_ROOT>` — root directory for all version-managers. For download cache and interdependencies
+
+  Default value: `$HOME/version-managers`
 * `--root <ROOT>` — Root directory. By default all paths are relative to this one
 
   Default value: `$HOME/version-managers/mariadb-version-manager-rs`
@@ -69,7 +71,7 @@ This document contains the help content for the `mariadb-version-manager-rs` com
 * `--database <DATABASE>` — Database name
 
   Default value: `database`
-* `--runtime-path <RUNTIME_PATH>` — Runtime path
+* `--runtime-path <RUNTIME_PATH>` — Runtime path. This is where PID files and/or similar temporary files are stored
 
   Default value: `$HOME/version-managers/mariadb-version-manager-rs/mariadb-version-manager-rs/$APP_VERSION/run`
 * `--data-path <DATA_PATH>` — Data path. This is where the actual data is stored, e.g., the .db and WAL files
@@ -252,13 +254,6 @@ Install Windows Service
 * `--service-description <SERVICE_DESCRIPTION>`
 
   Default value: ``
-
-
-
-## `mariadb-version-manager-rs unknown`
-
-**Usage:** `mariadb-version-manager-rs unknown`
-
 
 
 <hr/>
