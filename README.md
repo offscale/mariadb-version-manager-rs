@@ -12,44 +12,46 @@ This document contains the help content for the `mariadb-version-manager-rs` com
 
 * [`mariadb-version-manager-rs`↴](#mariadb-version-manager-rs)
 * [`mariadb-version-manager-rs download`↴](#mariadb-version-manager-rs-download)
+* [`mariadb-version-manager-rs download-plan`↴](#mariadb-version-manager-rs-download-plan)
 * [`mariadb-version-manager-rs env`↴](#mariadb-version-manager-rs-env)
 * [`mariadb-version-manager-rs install`↴](#mariadb-version-manager-rs-install)
+* [`mariadb-version-manager-rs install-dependencies`↴](#mariadb-version-manager-rs-install-dependencies)
 * [`mariadb-version-manager-rs ls`↴](#mariadb-version-manager-rs-ls)
 * [`mariadb-version-manager-rs ls-remote`↴](#mariadb-version-manager-rs-ls-remote)
-* [`mariadb-version-manager-rs reload`↴](#mariadb-version-manager-rs-reload)
-* [`mariadb-version-manager-rs start`↴](#mariadb-version-manager-rs-start)
-* [`mariadb-version-manager-rs stop`↴](#mariadb-version-manager-rs-stop)
 * [`mariadb-version-manager-rs uri`↴](#mariadb-version-manager-rs-uri)
-* [`mariadb-version-manager-rs install-service`↴](#mariadb-version-manager-rs-install-service)
-* [`mariadb-version-manager-rs install-service open-rc`↴](#mariadb-version-manager-rs-install-service-open-rc)
-* [`mariadb-version-manager-rs install-service systemd`↴](#mariadb-version-manager-rs-install-service-systemd)
-* [`mariadb-version-manager-rs install-service windows-service`↴](#mariadb-version-manager-rs-install-service-windows-service)
+* [`mariadb-version-manager-rs service`↴](#mariadb-version-manager-rs-service)
+* [`mariadb-version-manager-rs service install`↴](#mariadb-version-manager-rs-service-install)
+* [`mariadb-version-manager-rs service install open-rc`↴](#mariadb-version-manager-rs-service-install-open-rc)
+* [`mariadb-version-manager-rs service install systemd`↴](#mariadb-version-manager-rs-service-install-systemd)
+* [`mariadb-version-manager-rs service install windows-service`↴](#mariadb-version-manager-rs-service-install-windows-service)
+* [`mariadb-version-manager-rs service reload`↴](#mariadb-version-manager-rs-service-reload)
+* [`mariadb-version-manager-rs service start`↴](#mariadb-version-manager-rs-service-start)
+* [`mariadb-version-manager-rs service stop`↴](#mariadb-version-manager-rs-service-stop)
 
 ## `mariadb-version-manager-rs`
 
 
 
-**Usage:** `mariadb-version-manager-rs [OPTIONS] --port <PORT> <COMMAND>`
+**Usage:** `mariadb-version-manager-rs [OPTIONS] <COMMAND>`
 
 ###### **Subcommands:**
 
 * `download` — Download specified version
+* `download-plan` — Resolve download URL and hash/checksum. Useful for security and concurrency.
 * `env` — Print out associated environment variables
 * `install` — Install specified version
+* `install-dependencies` — Install (only) dependencies for specified version
 * `ls` — List what versions are installed
 * `ls-remote` — List what versions are available
-* `reload` — Reload specified version
-* `start` — Start specified version
-* `stop` — Stop specified version
 * `uri` — Print out database connection string
-* `install-service` — Install service (daemon), e.g., systemd, OpenRC, windows-service
+* `service` — Service management
 
 ###### **Options:**
 
 * `--vms-config <VMS_CONFIG>` — Config file to read from. If provided used as new default (before env and argv res)
 
   Default value: `$HOME/version-managers/mariadb-version-manager-rs/vms-config.json`
-* `--config-read` — Whether to read from config file. If vms_config provided, this defaults to `true`
+* `--config-read` — Whether to read from config file. If vms_config provided, this defaults to  `true`
 
   Default value: `false`
 * `--config-write` — Whether to write to config file
@@ -68,6 +70,8 @@ This document contains the help content for the `mariadb-version-manager-rs` com
 
   Default value: `localhost`
 * `-p`, `--port <PORT>` — Port for server to listen on
+
+  Default value: `3306`
 * `--database <DATABASE>` — Database name
 
   Default value: `database`
@@ -98,7 +102,19 @@ Download specified version
 
 ###### **Arguments:**
 
-* `<VERSION>`
+* `<VERSION>` — version to install, defaults to global arg if provided otherwise env var
+
+
+
+## `mariadb-version-manager-rs download-plan`
+
+Resolve download URL and hash/checksum. Useful for security and concurrency.
+
+**Usage:** `mariadb-version-manager-rs download-plan [VERSION]`
+
+###### **Arguments:**
+
+* `<VERSION>` — version to install, defaults to global arg if provided otherwise env var
 
 
 
@@ -114,11 +130,24 @@ Print out associated environment variables
 
 Install specified version
 
-**Usage:** `mariadb-version-manager-rs install [VERSION]`
+**Usage:** `mariadb-version-manager-rs install [VERSION] [SKIP_DEPENDENCIES]...`
 
 ###### **Arguments:**
 
-* `<VERSION>`
+* `<VERSION>` — version to install, defaults to global arg if provided otherwise env var
+* `<SKIP_DEPENDENCIES>` — dependencies to skip installation of, defaults to install all. Skip all with *
+
+
+
+## `mariadb-version-manager-rs install-dependencies`
+
+Install (only) dependencies for specified version
+
+**Usage:** `mariadb-version-manager-rs install-dependencies [VERSION]`
+
+###### **Arguments:**
+
+* `<VERSION>` — version to install, defaults to global arg if provided otherwise env var
 
 
 
@@ -138,42 +167,6 @@ List what versions are available
 
 
 
-## `mariadb-version-manager-rs reload`
-
-Reload specified version
-
-**Usage:** `mariadb-version-manager-rs reload [VERSION]`
-
-###### **Arguments:**
-
-* `<VERSION>`
-
-
-
-## `mariadb-version-manager-rs start`
-
-Start specified version
-
-**Usage:** `mariadb-version-manager-rs start [VERSION]`
-
-###### **Arguments:**
-
-* `<VERSION>`
-
-
-
-## `mariadb-version-manager-rs stop`
-
-Stop specified version
-
-**Usage:** `mariadb-version-manager-rs stop [VERSION]`
-
-###### **Arguments:**
-
-* `<VERSION>`
-
-
-
 ## `mariadb-version-manager-rs uri`
 
 Print out database connection string
@@ -182,12 +175,27 @@ Print out database connection string
 
 
 
-## `mariadb-version-manager-rs install-service`
+## `mariadb-version-manager-rs service`
+
+Service management
+
+**Usage:** `mariadb-version-manager-rs service <COMMAND>`
+
+###### **Subcommands:**
+
+* `install` — Install service (daemon), e.g., systemd, OpenRC, windows-service
+* `reload` — Reload specified version
+* `start` — Start specified version
+* `stop` — Stop specified version
+
+
+
+## `mariadb-version-manager-rs service install`
 
 Install service (daemon), e.g., systemd, OpenRC, windows-service
 
-**Usage:** `mariadb-version-manager-rs install-service
-install-service <COMMAND>`
+**Usage:** `mariadb-version-manager-rs service install
+install <COMMAND>`
 
 ###### **Subcommands:**
 
@@ -197,63 +205,100 @@ install-service <COMMAND>`
 
 
 
-## `mariadb-version-manager-rs install-service open-rc`
+## `mariadb-version-manager-rs service install open-rc`
 
 Install OpenRC service
 
-**Usage:** `mariadb-version-manager-rs install-service open-rc [OPTIONS]`
+**Usage:** `mariadb-version-manager-rs service install open-rc [OPTIONS]`
 
 ###### **Options:**
 
-* `--group <GROUP>`
+* `--group <GROUP>` — user group to run service as
 
   Default value: `mariadb-version-manager-rs`
-* `--config-install-path <CONFIG_INSTALL_PATH>`
+* `--config-install-path <CONFIG_INSTALL_PATH>` — where to install the config file
 
   Default value: `/etc/conf.d/mariadb-version-manager-rs`
-* `--service-install-path <SERVICE_INSTALL_PATH>`
+* `--service-install-path <SERVICE_INSTALL_PATH>` — where to install the service file
 
   Default value: `/etc/init.d/mariadb-version-manager-rs`
-* `--user <USER>`
+* `--user <USER>` — user to run service as
 
   Default value: `mariadb-version-manager-rs`
 
 
 
-## `mariadb-version-manager-rs install-service systemd`
+## `mariadb-version-manager-rs service install systemd`
 
 Install systemd service
 
-**Usage:** `mariadb-version-manager-rs install-service systemd [OPTIONS]`
+**Usage:** `mariadb-version-manager-rs service install systemd [OPTIONS]`
 
 ###### **Options:**
 
-* `--group <GROUP>`
+* `--group <GROUP>` — user group to run service as
 
   Default value: `mariadb-version-manager-rs`
-* `--service-install-path <SERVICE_INSTALL_PATH>`
+* `--service-install-path <SERVICE_INSTALL_PATH>` — where to install the service file
 
   Default value: `/etc/systemd/system/mariadb-version-manager-rs.service`
-* `--user <USER>`
+* `--user <USER>` — user to run service as
 
   Default value: `mariadb-version-manager-rs`
 
 
 
-## `mariadb-version-manager-rs install-service windows-service`
+## `mariadb-version-manager-rs service install windows-service`
 
 Install Windows Service
 
-**Usage:** `mariadb-version-manager-rs install-service windows-service [OPTIONS]`
+**Usage:** `mariadb-version-manager-rs service install windows-service [OPTIONS]`
 
 ###### **Options:**
 
-* `--service-name <SERVICE_NAME>`
+* `--service-name <SERVICE_NAME>` — name of service
 
   Default value: `mariadb-version-manager-rs`
-* `--service-description <SERVICE_DESCRIPTION>`
+* `--service-description <SERVICE_DESCRIPTION>` — description of service
 
   Default value: ``
+
+
+
+## `mariadb-version-manager-rs service reload`
+
+Reload specified version
+
+**Usage:** `mariadb-version-manager-rs service reload [VERSION]`
+
+###### **Arguments:**
+
+* `<VERSION>` — version to install, defaults to global arg if provided otherwise env var
+
+
+
+## `mariadb-version-manager-rs service start`
+
+Start specified version
+
+**Usage:** `mariadb-version-manager-rs service start [VERSION]`
+
+###### **Arguments:**
+
+* `<VERSION>` — version to install, defaults to global arg if provided otherwise env var
+
+
+
+## `mariadb-version-manager-rs service stop`
+
+Stop specified version
+
+**Usage:** `mariadb-version-manager-rs service stop [VERSION]`
+
+###### **Arguments:**
+
+* `<VERSION>` — version to install, defaults to global arg if provided otherwise env var
+
 
 
 <hr/>
