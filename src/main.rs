@@ -35,9 +35,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         Commands::Ls {} => command::default_ls_command(&args)?,
-        _ => {
-            let _ = Cli::command().print_help();
-        }
+        _ => command::default_command(&args)?,
     }
     config::maybe_config_file_write(&args)?;
     Ok(())
