@@ -15,12 +15,16 @@ version_manager_rs::cli_struct_and_helpers!(
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = {
         let mut _args = Cli::parse();
-        config::maybe_config_from_file(&mut _args)?.unwrap_or_else(|| _args)
+        config::maybe_config_from_file(&mut _args)?.unwrap_or_else(|| {
+            config::resolve_config_vars(&mut _args);
+            _args
+        })
     };
     if args.markdown_help {
         clap_markdown::print_help_markdown::<Cli>();
         return Ok(());
     }
+    println!("args.root: {:?}\n", args.root);
     match &args.command {
         Commands::Download { version } => {
             match download(
