@@ -34,11 +34,9 @@ esac
 // From https://dlm.mariadb.com/rest/releases/mariadb_server/ 2024-04-06
 lazy_static! {
     static ref AOT_MARIADB_VERSIONS_VEC: Vec<&'static str> = vec![
-        "10.4.33", "10.5.24", "10.6.17", "10.11.7", "11.0.5",
-        "11.1.4", "11.2.3", "11.3.2", "11.4.1"];
-    static ref AOT_MARIADB_VERSIONS: std::collections::HashSet<&'static str> = std::collections::HashSet::from(
-        AOT_MARIADB_VERSIONS_VEC.copy()
-    );
+        "10.4.33", "10.5.24", "10.6.17", "10.11.7", "11.0.5", "11.1.4", "11.2.3", "11.3.2",
+        "11.4.1"
+    ];
 }
 
 #[tokio::main]
@@ -70,18 +68,22 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         Commands::Ls {} => command::default_ls_command(&args)?,
-        Commands::LsRemote {} => for ver in &AOT_MARIADB_VERSIONS_VEC {
-            println!("{:?}", ver)
-        },
+        Commands::LsRemote {} => {
+            for ver in AOT_MARIADB_VERSIONS_VEC.iter() {
+                println!("{}", ver)
+            }
+        }
         _ => command::default_command(&args)?,
     }
     config::maybe_config_file_write(&args)?;
     Ok(())
 }
 
+/*
 /// Resolve `latest`, `lts`, `stable` and other such keywords using
 fn resolve_version(version: &Option<String>, aot_versions: AOT_MARIADB_VERSIONS) -> String {
     // Future work:
     // Semver range queries
     todo!()
 }
+*/
