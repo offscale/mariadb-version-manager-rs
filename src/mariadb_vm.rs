@@ -57,3 +57,29 @@ pub async fn download(
     std::fs::write(&target_file, body)?;
     Ok(Some(std::ffi::OsString::from(target_file)))
 }
+
+use serde::Deserialize;
+
+/// List of major & minor releases
+/// https://mariadb.org/downloads-rest-api/#list-of-major-minor-releases
+#[derive(Deserialize, Debug)]
+#[allow(dead_code)]
+struct ListOfMajorAndMinorReleases {
+    major_releases: Vec<MajorReleases>,
+}
+
+#[derive(Deserialize, Debug)]
+#[allow(dead_code)]
+pub struct MajorReleases {
+    release_id: String,
+    release_name: String,
+    release_status: String,
+    release_support_type: String,
+    release_eol_date: Option<String>,
+}
+
+pub async fn versions_from_remote() -> Result<Vec<MajorReleases>, Box<dyn std::error::Error>> {
+    let response = reqwest::get("https://downloads.mariadb.org/rest-api/mariadb/").await?;
+    let list_of_major_and_minor_releases: ListOfMajorAndMinorReleases = response.json().await?;
+    Ok(list_of_major_and_minor_releases.major_releases)
+}
