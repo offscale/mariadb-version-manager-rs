@@ -58,24 +58,55 @@ pub async fn download(
     Ok(Some(std::ffi::OsString::from(target_file)))
 }
 
-use serde::Deserialize;
+mod date_format_month_year_day {
+    use chrono::NaiveDate;
+    use serde::{Deserialize, Deserializer, Serializer};
+
+    const FORMAT: &'static str = "%Y-%m-%d";
+
+    #[allow(dead_code)]
+    pub fn serialize<S>(date: &Option<NaiveDate>, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match date {
+            Some(d) => s.serialize_str(&d.format(FORMAT).to_string()),
+            None => s.serialize_none(),
+        }
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<NaiveDate>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        match Option::deserialize(deserializer)? {
+            Some(s) => Ok(Some(
+                NaiveDate::parse_from_str(s, FORMAT).map_err(serde::de::Error::custom)?,
+            )),
+            None => Ok(None),
+        }
+    }
+}
 
 /// List of major & minor releases
 /// https://mariadb.org/downloads-rest-api/#list-of-major-minor-releases
-#[derive(Deserialize, Debug)]
+#[derive(serde::Deserialize, Debug)]
 #[allow(dead_code)]
 struct ListOfMajorAndMinorReleases {
     major_releases: Vec<MajorReleases>,
 }
 
-#[derive(Deserialize, Debug)]
-#[allow(dead_code)]
+#[derive(serde::Deserialize, Debug)]
+// #[allow(dead_code)]
 pub struct MajorReleases {
-    release_id: String,
-    release_name: String,
-    release_status: String,
-    release_support_type: String,
-    release_eol_date: Option<String>,
+    pub release_id: String,
+    pub release_name: String,
+    pub release_status: String,
+    pub release_support_type: String,
+
+    #[serde(default)]
+    #[serde(with = "date_format_month_year_day")]
+    pub release_eol_date: Option<chrono::NaiveDate>,
 }
 
 pub async fn versions_from_remote() -> Result<Vec<MajorReleases>, Box<dyn std::error::Error>> {
