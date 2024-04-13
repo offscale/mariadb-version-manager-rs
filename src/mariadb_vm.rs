@@ -1,8 +1,8 @@
 extern crate reqwest;
 
-use std::borrow::Cow;
 use std::cmp::Ordering;
 
+use rand::Rng;
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 
@@ -61,6 +61,21 @@ struct ListOfPointReleasesAndFilesRoot {
 
 /* End https://mariadb.org/downloads-rest-api/#list-of-point-releases-and-files */
 
+/* Start https://mariadb.org/downloads-rest-api/#list-available-mirrors */
+
+#[derive(Serialize, Deserialize)]
+struct Mirror {
+    pub mirror_id: String,
+    pub mirror_name: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct ListAvailableMirrorsRoot {
+    pub mirror_list: std::collections::HashMap<String, Vec<Mirror>>,
+}
+
+/* End https://mariadb.org/downloads-rest-api/#list-available-mirrors */
+
 const API_BASE: &'static str = "https://downloads.mariadb.org/rest-api/mariadb";
 
 /// This download function makes up-to 3 requests: get exact version, checksum, mirror, archive
@@ -68,12 +83,14 @@ pub async fn download(
     version: &str,
     target_dir: &std::ffi::OsString,
     force: bool,
+    mirror: &Option<String>,
 ) -> Result<Option<std::ffi::OsString>, MariaDbVmError> {
     let client = reqwest::Client::builder()
-        .redirect(reqwest::redirect::Policy::limited(0))
+        .redirect(reqwest::redirect::Policy::limited(1))
         .build()?;
 
     let mut checksum: Option<Checksum> = None;
+    let mut file_id: Option<i64> = None;
 
     let major_minor_patch: std::borrow::Cow<str> =
         if version.chars().filter(|c| *c == '.').count() > 1 {
@@ -108,15 +125,15 @@ pub async fn download(
                 _ => "Source",
             };
 
-            checksum = match release
+            if let Some(file) = release
                 .files
                 .iter()
                 .find(|file| file.os == Some(String::from(os)))
             {
-                Some(file) => Some(file.checksum.clone()),
-                None => None,
+                file_id = Some(file.file_id);
+                checksum = Some(file.checksum.clone());
             };
-            Cow::from(release.release_id)
+            std::borrow::Cow::from(release.release_id)
         };
 
     let (download_url, filename) = {
@@ -195,8 +212,11 @@ pub async fn download(
         assert!(bytes_written > 0);
         let hash_bytes = hasher.finalize();
         if sh256.as_bytes().cmp(&hash_bytes[..]) != Ordering::Equal {
-            println!("{:x?} != {:x?}", sh256.as_bytes(), &hash_bytes[..]);
-            Ok(false)
+            eprintln!("{:x?}\n\t!=\n{:x?}", sh256.as_bytes(), &hash_bytes[..]);
+            Err(MariaDbVmError::from(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "SHA256 verification failed",
+            )))
         } else {
             Ok(true)
         }
@@ -221,10 +241,46 @@ pub async fn download(
         std::fs::create_dir_all(target_dir)?;
     }
 
-    // TODO: mirror resolution here
+    let mirror_id: String = if std::env::consts::OS == "freebsd" {
+        String::from("")
+    } else if let Some(id) = mirror {
+        String::from(id)
+    } else {
+        let mirrors_url = reqwest::Url::parse("https://downloads.mariadb.org/rest-api/mirrors")?;
+        println!("GET {}", mirrors_url);
+        let mirrors_response = client.get(mirrors_url).send().await?;
+        let list_available_mirrors_root: ListAvailableMirrorsRoot = mirrors_response.json().await?;
 
-    println!("GET {}", download_url);
-    let response = client.get(download_url).send().await?;
+        // Choose a random mirror. In reality, you may want to choose one closer to your IP? GeoIP?
+        let mut rng = rand::thread_rng();
+        let rand_i: usize = rng.gen_range(0..list_available_mirrors_root.mirror_list.len());
+        let mirrors = list_available_mirrors_root
+            .mirror_list
+            .values()
+            .skip(rand_i)
+            .next()
+            .unwrap();
+        let rand_j: usize = rng.gen_range(0..mirrors.len());
+        String::from(mirrors.get(rand_j).unwrap().mirror_id.as_str())
+    };
+
+    let response = if std::env::consts::OS == "freebsd" || file_id.is_none() {
+        println!("GET {}", download_url);
+        client.get(download_url).send().await?
+    } else {
+        // This alternative URL allows a provided mirror
+        let dl_url = reqwest::Url::parse_with_params(
+            &format!(
+                "{API_BASE}/{major_minor_patch}/{file_id}",
+                API_BASE = API_BASE,
+                major_minor_patch = major_minor_patch,
+                file_id = file_id.unwrap()
+            ),
+            &[("mirror", mirror_id)],
+        )?;
+        println!("GET {}", dl_url);
+        client.get(dl_url).send().await?
+    };
     std::fs::write(&target_file, response.bytes().await?)?;
     checksum_func(&checksum_sha256)?;
     Ok(Some(std::ffi::OsString::from(target_file)))

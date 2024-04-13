@@ -34,7 +34,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     match &args.command {
-        Commands::Download { version } => {
+        Commands::Download { version, mirror } => {
             let release_id: String = mariadb_vm::resolve_version(
                 match version {
                     Some(v) => v,
@@ -42,7 +42,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 },
                 &releases,
             );
-            match mariadb_vm::download(&release_id, &args.vm_root, false).await? {
+            match mariadb_vm::download(&release_id, &args.vm_root, false, mirror).await? {
                 Some(filepath) => println!("Downloaded: {:?}", filepath),
                 None => {}
             }
