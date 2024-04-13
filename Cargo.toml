@@ -15,3 +15,5 @@ url = "2.4.1"
 tokio = { version = "1.0.0", features = ["rt", "rt-multi-thread", "macros"] }
 lazy_static = "1.4.0"
 chrono = "0.4.37"
+sha2 = "0.10.8"
+hex-literal = "0.4.1"

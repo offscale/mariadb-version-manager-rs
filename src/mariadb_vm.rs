@@ -1,46 +1,159 @@
 extern crate reqwest;
 
+use std::borrow::Cow;
+use std::cmp::Ordering;
+
+use serde::{Deserialize, Serialize};
+use sha2::Digest;
+
 use crate::errors::MariaDbVmError;
 
+#[derive(Clone, Deserialize, Serialize)]
+struct Checksum {
+    pub md5sum: Option<String>,
+    pub sha1sum: Option<String>,
+    pub sha256sum: Option<String>,
+    pub sha512sum: Option<String>,
+}
+
+/* Start https://mariadb.org/downloads-rest-api/#list-file-checksums */
+
+#[derive(Serialize, Deserialize)]
+struct Response {
+    pub checksum: Checksum,
+}
+
+#[derive(Serialize, Deserialize)]
+struct ListOfFileChecksumsRoot {
+    pub response: Response,
+}
+
+/* End https://mariadb.org/downloads-rest-api/#list-file-checksums */
+
+/* Begin https://mariadb.org/downloads-rest-api/#list-of-point-releases-and-files */
+#[derive(Clone, Serialize, Deserialize)]
+struct Files {
+    pub file_id: i64,
+    pub file_name: String,
+    pub package_type: Option<String>,
+    pub os: Option<String>,
+    pub cpu: Option<String>,
+    pub checksum: Checksum,
+    pub signature: Option<String>,
+    pub checksum_url: String,
+    pub signature_url: String,
+    pub file_download_url: String,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+struct Release {
+    pub release_id: String,
+    pub release_name: String,
+    pub date_of_release: String,
+    pub release_notes_url: String,
+    pub change_log: String,
+    pub files: Vec<Files>,
+}
+#[derive(Serialize, Deserialize)]
+struct ListOfPointReleasesAndFilesRoot {
+    pub releases: std::collections::BTreeMap<String, Release>,
+}
+
+/* End https://mariadb.org/downloads-rest-api/#list-of-point-releases-and-files */
+
+const API_BASE: &'static str = "https://downloads.mariadb.org/rest-api/mariadb";
+
+/// This download function makes up-to 3 requests: get exact version, checksum, mirror, archive
 pub async fn download(
     version: &str,
     target_dir: &std::ffi::OsString,
     force: bool,
 ) -> Result<Option<std::ffi::OsString>, MariaDbVmError> {
-    // TODO: mirrors, checksum
-    let (url, filename) = {
-        let _parts = match std::env::consts::OS {
+    let client = reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::limited(0))
+        .build()?;
+
+    let mut checksum: Option<Checksum> = None;
+
+    let major_minor_patch: std::borrow::Cow<str> =
+        if version.chars().filter(|c| *c == '.').count() > 1 {
+            std::borrow::Cow::from(version)
+        } else {
+            // https://mariadb.org/downloads-rest-api/#list-of-point-releases-and-files
+            let list_of_point_releases_and_files_url = reqwest::Url::parse(&format!(
+                "{API_BASE}/{version}/",
+                API_BASE = API_BASE,
+                version = version
+            ))?;
+            println!("GET {}", list_of_point_releases_and_files_url);
+            let list_of_point_releases_and_files_root: ListOfPointReleasesAndFilesRoot = client
+                .get(list_of_point_releases_and_files_url)
+                .send()
+                .await?
+                .json()
+                .await?;
+            // Last element is the newest version
+            let release = list_of_point_releases_and_files_root
+                .releases
+                .values()
+                .rev()
+                .cloned()
+                .next()
+                .unwrap();
+
+            let os = match std::env::consts::OS {
+                "linux" => "Linux",
+                "windows" => "Windows",
+                // "freebsd" => "FreeBSD", // actually I don't think this ever appears
+                _ => "Source",
+            };
+
+            checksum = match release
+                .files
+                .iter()
+                .find(|file| file.os == Some(String::from(os)))
+            {
+                Some(file) => Some(file.checksum.clone()),
+                None => None,
+            };
+            Cow::from(release.release_id)
+        };
+
+    let (download_url, filename) = {
+        let (base_url, filename) = match std::env::consts::OS {
             "linux" => (
                 format!(
-                    "https://downloads.mariadb.org/rest-api/mariadb/{version}/",
-                    version = version
+                    "{API_BASE}/{major_minor_patch}/",
+                    API_BASE = API_BASE,
+                    major_minor_patch = major_minor_patch
                 ),
                 format!(
-                    "mariadb-{version}-linux-systemd-{arch}.tar.gz",
-                    version = version,
+                    "mariadb-{major_minor_patch}-linux-systemd-{arch}.tar.gz",
+                    major_minor_patch = major_minor_patch,
                     arch = std::env::consts::ARCH
                 ),
             ),
             "freebsd" => (
                 format!(
-                    "https://archive.mariadb.org/mariadb-{version}/bintar-freebsd130-{arch}/",
-                    version = version,
+                    "https://archive.mariadb.org/mariadb-{major_minor_patch}/bintar-freebsd130-{arch}/",
+                    major_minor_patch = major_minor_patch,
                     arch = std::env::consts::ARCH
                 ),
                 format!(
-                    "mariadb-{version}-freebsd13.0-{arch}.tar.gz",
-                    version = version,
+                    "mariadb-{major_minor_patch}-freebsd13.0-{arch}.tar.gz",
+                    major_minor_patch = major_minor_patch,
                     arch = std::env::consts::ARCH
                 ),
             ),
             "windows" => (
                 format!(
-                    "http://downloads.mariadb.org/rest-api/mariadb/{version}/",
-                    version = version
+                    "{API_BASE}/{major_minor_patch}/",
+                    API_BASE = API_BASE,
+                    major_minor_patch = major_minor_patch
                 ),
                 format!(
-                    "mariadb-{version}-win{arch}.zip",
-                    version = version,
+                    "mariadb-{major_minor_patch}-win{arch}.zip",
+                    major_minor_patch = major_minor_patch,
                     arch = match std::env::consts::ARCH {
                         "x86" => "x32",
                         "x86_64" => "x64",
@@ -52,21 +165,68 @@ pub async fn download(
         };
 
         (
-            reqwest::Url::parse(&format!("{}{}", _parts.0, _parts.1))?,
-            _parts.1,
+            reqwest::Url::parse(&format!("{}{}", base_url, filename))?,
+            filename,
         )
     };
+
+    if checksum.is_none() {
+        let checksum_url = reqwest::Url::parse(&format!(
+            "{API_BASE}/{major_minor_patch}/{filename}/checksum",
+            API_BASE = API_BASE,
+            major_minor_patch = major_minor_patch,
+            filename = filename
+        ))?;
+        println!("GET {}", checksum_url);
+        let checksum_response = client.get(checksum_url).send().await?;
+        let checksum_root: ListOfFileChecksumsRoot = checksum_response.json().await?;
+        checksum = Some(checksum_root.response.checksum);
+    }
+
     let target_dir = std::path::Path::new(target_dir.as_os_str())
         .join("downloads")
         .join("mariadb");
     let target_file = target_dir.join(filename);
+
+    let checksum_func = |sh256: &String| -> Result<bool, MariaDbVmError> {
+        let mut hasher = sha2::Sha256::new();
+        let mut file = std::fs::File::open(&target_file)?;
+        let bytes_written = std::io::copy(&mut file, &mut hasher)?;
+        assert!(bytes_written > 0);
+        let hash_bytes = hasher.finalize();
+        if sh256.as_bytes().cmp(&hash_bytes[..]) != Ordering::Equal {
+            println!("{:x?} != {:x?}", sh256.as_bytes(), &hash_bytes[..]);
+            Ok(false)
+        } else {
+            Ok(true)
+        }
+    };
+    let check_sum = checksum.unwrap();
+
+    let checksum_sha256 = check_sum.sha256sum.unwrap();
+    // could check other checksums here if sha256 isn't defined
+
     if !force && target_file.is_file() {
-        return Ok(Some(target_file.into_os_string()));
+        match checksum_func(&checksum_sha256) {
+            Ok(passed) => {
+                if passed {
+                    return Ok(Some(target_file.into_os_string()));
+                } else {
+                }
+            }
+            Err(_) => {}
+        }
+        // Err(std::io::Error::new(std::io::ErrorKind::InvalidData, "Checksum not found"));
     } else if !target_dir.is_dir() {
         std::fs::create_dir_all(target_dir)?;
     }
-    let response = reqwest::get(url).await?;
+
+    // TODO: mirror resolution here
+
+    println!("GET {}", download_url);
+    let response = client.get(download_url).send().await?;
     std::fs::write(&target_file, response.bytes().await?)?;
+    checksum_func(&checksum_sha256)?;
     Ok(Some(std::ffi::OsString::from(target_file)))
 }
 
@@ -222,7 +382,7 @@ pub fn offline_major_releases() -> Vec<MajorReleases> {
 }
 
 pub async fn versions_from_remote() -> Result<Vec<MajorReleases>, Box<dyn std::error::Error>> {
-    let response = reqwest::get("https://downloads.mariadb.org/rest-api/mariadb/").await?;
+    let response = reqwest::get(format!("{API_BASE}/", API_BASE = API_BASE)).await?;
     let mut list_of_major_and_minor_releases: ListOfMajorAndMinorReleases = response.json().await?;
     list_of_major_and_minor_releases
         .major_releases
